@@ -1,0 +1,226 @@
+#!/bin/bash
+
+# Function to replace illegal characters in a string
+replace_illegal_chars() {
+  local str=$1
+  str=$(echo "$str" | tr -d '/\<>:|?*')
+  echo "$str"
+}
+
+# Function to prompt for revision
+prompt_revision() {
+  local prompt_msg=$1
+  local original_value=$2
+
+  while true; do
+    read -p "$prompt_msg [y/n] " -r
+    echo
+
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      read -p "Press Enter" revised_value
+      echo
+      revised_value=$(replace_illegal_chars "$revised_value")
+      echo "Revised Value: $revised_value"
+      return 0
+    elif [[ $REPLY =~ ^[Nn]$ ]]; then
+      revised_value=$original_value
+      return 1
+    else
+      echo "Invalid input. Please enter 'y' for yes or 'n' for no."
+    fi
+  done
+}
+
+# Prompt user for accession number
+read -p "Please enter the accession number (YYYY-####): " accession
+
+# Prompt user for artist's last name
+read -p "Please enter the artist's last name: " artist_last
+
+# Prompt user for artist's first name
+read -p "Please enter the artist's first name: " artist_first
+
+# Prompt user for artist's middle name (optional)
+read -p "Please enter the artist's middle name (optional): " artist_middle
+
+# Prompt user for title of artwork
+read -p "Please enter the title of the artwork: " title
+
+# Replace illegal characters in the inputs
+accession=$(replace_illegal_chars "$accession")
+artist_last=$(replace_illegal_chars "$artist_last")
+artist_first=$(replace_illegal_chars "$artist_first")
+artist_middle=$(replace_illegal_chars "$artist_middle")
+title=$(replace_illegal_chars "$title")
+
+# Display the entered values for approval
+echo "Entered Values:"
+echo "Accession Number: $accession"
+echo "Artist's Last Name: $artist_last"
+echo "Artist's First Name: $artist_first"
+echo "Artist's Middle Name: $artist_middle"
+echo "Artwork Title: $title"
+
+# Prompt for approval
+prompt_revision "Do you approve the entered values?" "y"
+
+if [[ $? -eq 0 ]]; then
+  # Display final approval message
+  echo "Accession number, artist's names, and artwork title approved."
+else
+  # Prompt for revision if approval is not given
+  prompt_revision "Do you want to revise the accession number?" "$accession"
+  accession=$revised_value
+
+  prompt_revision "Do you want to revise the artist's last name?" "$artist_last"
+  artist_last=$revised_value
+
+  prompt_revision "Do you want to revise the artist's first name?" "$artist_first"
+  artist_first=$revised_value
+
+  prompt_revision "Do you want to revise the artist's middle name?" "$artist_middle"
+  artist_middle=$revised_value
+
+  prompt_revision "Do you want to revise the artwork title?" "$title"
+  title=$revised_value
+
+  # Display final approval message after revision
+  echo "Revised Accession number, artist's names, and artwork title approved."
+fi
+
+# Replace spaces with underscores
+accession="${accession// /_}"
+artist_last="${artist_last// /_}"
+artist_first="${artist_first// /_}"
+artist_middle="${artist_middle// /_}"
+
+# Remove spaces from the title
+title=$(echo "$title" | tr -d ' ')
+
+# Prompt user to drag the existing artwork folder into terminal
+cowsay "Please drag the existing ARTWORK FOLDER into the terminal and press Enter. If it doesn't exist, please create the folder now and drag it into the terminal and press Enter."
+read -e -p "Artwork folder directory: " artwork_folder
+
+# Prompt for subdirectories (only once)
+while true; do
+  read -p "Do you want to add the artwork folder subdirectories? [y/n] " -r
+  echo
+
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Create a subdirectory with the accession number
+    subdirectory="${accession}_${title}"
+    mkdir -p "${artwork_folder}/${subdirectory}"
+
+    # Create subdirectories in the artwork folder's subdirectory
+    subdirectories=("Acquisition and Registration" "Artist Interaction" "Conservation" "Installation Reports and Exhibition Info" "Photo and Video Documentation" "Research" "Technical Info and Specs")
+
+    for subdir in "${subdirectories[@]}"; do
+      mkdir -p "${artwork_folder}/${subdirectory}/${subdir}"
+      echo "Created subdirectory: ${artwork_folder}/${subdirectory}/${subdir}"
+    done
+
+    # Create additional subdirectories within the Conservation subdirectory
+    conservation_subdirectories=("Condition Reports" "Equipment Reports")
+
+    for subdir in "${conservation_subdirectories[@]}"; do
+      mkdir -p "${artwork_folder}/${subdirectory}/Conservation/${subdir}"
+      echo "Created subdirectory: ${artwork_folder}/${subdirectory}/Conservation/${subdir}"
+    done
+
+    # Copy template files
+    template_file1="/Volumes/groups/Conservation/TBM_Cons/DOCUMENTATION TEMPLATES/CataloguingWorksheet_CITI.xlsx"
+    new_file1="${accession}_${artist_last}_CataloguingWorksheet_CITI.xlsx"
+    cp "$template_file1" "${artwork_folder}/${subdirectory}/Acquisition and Registration/${new_file1}"
+    echo "Copied template file to: ${artwork_folder}/${subdirectory}/Acquisition and Registration/${new_file1}"
+
+    template_file2="/Volumes/groups/Conservation/TBM_Cons/DOCUMENTATION TEMPLATES/ActivityLog_Template.docx"
+    new_file2="${accession}_${artist_last}_ActivityLog.docx"
+    cp "$template_file2" "${artwork_folder}/${subdirectory}/Conservation/${new_file2}"
+    echo "Copied template file to: ${artwork_folder}/${subdirectory}/Conservation/${new_file2}"
+
+    # Confirmation message
+    cowsay "Subdirectories created and template files copied successfully!"
+ break
+  elif [[ $REPLY =~ ^[Nn]$ ]]; then
+    echo "Artwork folder subdirectories will not be added."
+    break  # Exit the loop when the user chooses not to add subdirectories
+  else
+    echo "Invalid input. Please enter 'y' for yes or 'n' for no."
+  fi
+done
+
+# Display message with cowsay for DIGITAL REPOSITORY
+cowsay "Please drag and drop the DIGITAL REPOSITORY folder into the terminal and press Enter. If it doesn't exist, please create the folder now and drag it into the terminal and press Enter."
+
+# Read dragged digital repository path
+read -e -p "Digital Repository path: " digital_repository
+
+# # Extract the directory name from the path
+# alias=$(basename "$digital_repository")
+
+# # Create a symbolic link (alias) to the directory inside the artwork_folder
+# ln -s "$digital_repository" "$artwork_folder/$subdirectory/$alias"
+
+# Define the video and audio formats to search for
+formats=("mp4" "avi" "mp3" "wav" "mov" "mkv" "flac" "aiff")
+
+# Create a temporary file to store the list of media files
+temp_file=$(mktemp)
+
+# Capture video and audio files in the digital repository directory and store them in an array
+media_files=()
+
+for format in "${formats[@]}"; do
+  find "$digital_repository" -type f -iname "*.$format" -print0 >> "$temp_file"
+done
+
+# Read the list of media files from the temporary file into the array
+while IFS= read -r -d '' file; do
+  media_files+=("$file")
+done < "$temp_file"
+
+# Remove the temporary file
+rm "$temp_file"
+
+# Print the number of media files found and list them (for debugging)
+echo "Found ${#media_files[@]} media files in the digital repository directory."
+printf '%s\n' "${media_files[@]}"
+
+# Print a message to indicate that the script is processing media files
+echo "Processing MediaInfo reports..."
+
+# Process each media file in the digital repository directory
+for file in "${media_files[@]}"; do
+  # Extract the file name and extension
+  file_basename=$(basename "$file")
+  file_name="${file_basename%.*}"
+
+  # Capture mediainfo -f output
+  mediainfo_output="${artwork_folder}/${subdirectory}/Conservation/Condition Reports/${file_name}-mediainfo.txt"
+  mediainfo -f "$file" > "$mediainfo_output"
+  echo "mediainfo captured and saved to: ${mediainfo_output}"
+
+  # Debug: Print the name of the file being processed
+  echo "Processing file: $file_basename"
+
+  # For video files, capture ffmpeg framemd5 output
+  if [[ "${formats[@]}" =~ "$file_extension" ]]; then
+    framemd5_output="${artwork_folder}/${subdirectory}/Conservation/Condition Reports/${file_name}.framemd5"
+    echo "ffmpeg framemd5 for ${file_basename}" > "$framemd5_output"  # Add the header
+    ffmpeg -i "$file" -f framemd5 - 2>/dev/null >> "$framemd5_output"
+    echo "ffmpeg framemd5 captured and saved to: ${framemd5_output}"
+  fi
+
+  # Calculate the MD5 checksum of the digital repository file
+  digital_repository_checksum=$(md5 -r "$file" | awk '{ print $1 }') 
+  # Create the checksum file with the desired format
+  checksum_file="${artwork_folder}/${subdirectory}/Conservation/Condition Reports/${file_name}-md5.txt"
+  echo "MD5 ${file_basename} = ${digital_repository_checksum}" > "${checksum_file}"
+  echo "Checksum saved to: ${checksum_file}"
+
+done
+
+# Debug: Print a message when processing is complete
+echo "Processing MediaInfo reports complete."
+
+#DO NOT CHANGE ABOVE THIS LINE
