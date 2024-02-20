@@ -128,12 +128,12 @@ while true; do
     done
 
     # Copy template files
-    template_file1="/Volumes/groups/Conservation/TBM_Cons/DOCUMENTATION TEMPLATES/CataloguingWorksheet_CITI.xlsx"
+    template_file1="/Volumes/TBM_Cons/DOCUMENTATION TEMPLATES/CataloguingWorksheet_CITI.xlsx"
     new_file1="${accession}_${artist_last}_CataloguingWorksheet_CITI.xlsx"
     cp "$template_file1" "${artwork_folder}/${subdirectory}/Acquisition and Registration/${new_file1}"
     echo "Copied template file to: ${artwork_folder}/${subdirectory}/Acquisition and Registration/${new_file1}"
 
-    template_file2="/Volumes/groups/Conservation/TBM_Cons/DOCUMENTATION TEMPLATES/ActivityLog_Template.docx"
+    template_file2="/Volumes/TBM_Cons/DOCUMENTATION TEMPLATES/ActivityLog_Template.docx"
     new_file2="${accession}_${artist_last}_ActivityLog.docx"
     cp "$template_file2" "${artwork_folder}/${subdirectory}/Conservation/${new_file2}"
     echo "Copied template file to: ${artwork_folder}/${subdirectory}/Conservation/${new_file2}"
@@ -155,14 +155,17 @@ cowsay "Please drag and drop the DIGITAL REPOSITORY folder into the terminal and
 # Read dragged digital repository path
 read -e -p "Digital Repository path: " digital_repository
 
-# # Extract the directory name from the path
-# alias=$(basename "$digital_repository")
+# CHANGE THE FOLLOWING TO MAKE THE ALIAS OF THE DIGITAL REPOSITORY
+# Extract the directory name from the path
+alias=$(basename "$digital_repository")
 
-# # Create a symbolic link (alias) to the directory inside the artwork_folder
-# ln -s "$digital_repository" "$artwork_folder/$subdirectory/$alias"
+# Create a symbolic link (alias) to the directory inside the artwork_folder
+ln -s "$digital_repository" "$artwork_folder/$subdirectory/$alias"
+
+echo "Alias created for $digital_repository in $artwork_folder."
 
 # Define the video and audio formats to search for
-formats=("mp4" "avi" "mp3" "wav" "mov" "mkv" "flac" "aiff")
+formats=("mp4" "avi" "mp3" "wav" "mov" "mkv" "flac" "aiff" "vob")
 
 # Create a temporary file to store the list of media files
 temp_file=$(mktemp)
@@ -204,12 +207,11 @@ for file in "${media_files[@]}"; do
   echo "Processing file: $file_basename"
 
   # For video files, capture ffmpeg framemd5 output
-  if [[ "${formats[@]}" =~ "$file_extension" ]]; then
-    framemd5_output="${artwork_folder}/${subdirectory}/Conservation/Condition Reports/${file_name}.framemd5"
-    echo "ffmpeg framemd5 for ${file_basename}" > "$framemd5_output"  # Add the header
-    ffmpeg -i "$file" -f framemd5 - 2>/dev/null >> "$framemd5_output"
-    echo "ffmpeg framemd5 captured and saved to: ${framemd5_output}"
-  fi
+  # Capture ffmpeg framemd5 output
+  framemd5_output="${artwork_folder}/${subdirectory}/Conservation/Condition Reports/${file_name}.framemd5"
+  echo "ffmpeg framemd5 for ${file_basename}" > "$framemd5_output"  # Add the header
+  ffmpeg -i "$file" -f framemd5 - >> "$framemd5_output" 2>/dev/null  # Append the framemd5 output
+  echo "ffmpeg framemd5 captured and saved to: ${framemd5_output}"
 
   # Calculate the MD5 checksum of the digital repository file
   digital_repository_checksum=$(md5 -r "$file" | awk '{ print $1 }') 
