@@ -125,13 +125,13 @@ for subdir in "${conservation_subdirectories[@]}"; do
 done
 
 # Copy the template file to Acquisition and Registration subdirectory
-template_file="/Volumes/groups/Conservation/TBM_Cons/DOCUMENTATION TEMPLATES/CataloguingWorksheet_CITI.xlsx"
+template_file="/Volumes/TBM_Cons/DOCUMENTATION TEMPLATES/CataloguingWorksheet_CITI.xlsx"
 new_file="${accession}_${artist_last}_CataloguingWorksheet_CITI.xlsx"
 cp "$template_file" "${artwork_folder}/${subdirectory}/Acquisition and Registration/${new_file}"
 echo "Copied template file to: ${artwork_folder}/${subdirectory}/Acquisition and Registration/${new_file}"
 
 # Copy the template file to Conservation subdirectory
-template_file="/Volumes/groups/Conservation/TBM_Cons/DOCUMENTATION TEMPLATES/ActivityLog_Template.docx"
+template_file="/Volumes/TBM_Cons/DOCUMENTATION TEMPLATES/ActivityLog_Template.docx"
 new_file="${accession}_${artist_last}_ActivityLog.docx"
 cp "$template_file" "${artwork_folder}/${subdirectory}/Conservation/${new_file}"
 echo "Copied template file to: ${artwork_folder}/${subdirectory}/Conservation/${new_file}"
@@ -180,7 +180,7 @@ echo "Files successfully ingested using rsync!"
 video_files=()
 while IFS= read -r -d '' file; do
   video_files+=("$file")
-done < <(find "$digital_repository" -type f \( -iname "*.mp4" -o -iname "*.mov" -o -iname "*.avi" \) -print0)
+done < <(find "$digital_repository" -type f \( -iname "*.mp4" -o -iname "*.mov" -o -iname "*.avi" -o -iname "*.vob" \) -print0)
 
 # Print the number of video files found and list them (for debugging)
 echo "Found ${#video_files[@]} video files in the digital repository directory."
@@ -228,6 +228,3 @@ Artist Drive Checksum: ${artist_checksum}"
 done
 
   # DO NOT CHANGE ABOVE THIS LINE
-
-
-
